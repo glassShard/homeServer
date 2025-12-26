@@ -52,6 +52,7 @@ def upsert_json_dict(key: str, updates: dict):
     replace_file(data)
 
 def on_message(_client, _userdata, message):
+    print("message received")
     try:
         payload_str = message.payload.decode("utf-8")
         data = json.loads(payload_str)
@@ -82,7 +83,6 @@ def send_light_command():
     for key, value in actuator_state.items():
         if key.startswith("light"):
             switch_value = switch_state.get(key)
-            print (f"key: {key}, switch_value: {switch_value}, daytime: {daytime}")
 
             payload_dict = None
 
@@ -97,8 +97,17 @@ def send_light_command():
                 print(payload)
                 tower_light_commander.setLight(mqtt_broker_host, mqtt_broker_port, payload)
     
+def on_connect(client, userdata, flags, reason_code, properties=None):
+    print("CONNECTED", reason_code, flush=True)
+    client.subscribe(mqtt_topic)
+
+def on_disconnect(client, userdata, flags, reason_code, properties=None):
+    print("DISCONNECTED", reason_code, flush=True)
+
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "TowerLightSubscriber")
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
 client.on_message = on_message
-client.connect(mqtt_broker_host, mqtt_broker_port)
-client.subscribe(mqtt_topic)
-client.loop_forever()
+client.reconnect_delay_set(min_delay=1, max_delay=10)
+client.connect(mqtt_broker_host, mqtt_broker_port, keepalive=30)
+client.loop_forever(retry_first_connection=True)
