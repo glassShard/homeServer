@@ -1,0 +1,34 @@
+{
+  "switch_status": {
+    "pumpTower": true,
+    "light1ACold": true,
+    "light1AWarm": true,
+    "light2ACold": true,
+    "light2AWarm": true,
+    "light1DCold": true,
+    "light1DWarm": true,
+    "light2DCold": true,
+    "light2DWarm": true,
+    "light1T": true,
+    "light2T": true
+  },
+  "actuator_status": {
+    "light1ACold": true,
+    "light1AWarm": true,
+    "light2ACold": true,
+    "light2AWarm": true,
+    "light1DCold": true,
+    "light1DWarm": true,
+    "light2DCold": true,
+    "light2DWarm": true,
+    "light1T": true,
+    "light2T": true,
+    "pumpTower": false
+  },
+  "sensor_status": {
+    "temperature": 22.66,
+    "pressure_hPa": 1015.477,
+    "humidity": 39.07617,
+    "light_raw": 912
+  }
+}
