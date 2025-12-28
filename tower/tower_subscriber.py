@@ -6,8 +6,21 @@ import paho.mqtt.client as mqtt
 import tower_light_commander
 import tempfile
 from tower_lock import tower_lock
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        TimedRotatingFileHandler(os.getenv("LOGPATH"), when="midnight", backupCount=3)
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 mqtt_broker_host = os.getenv("MQTT_HOST")
 mqtt_broker_port = int(os.getenv("MQTT_PORT"))
@@ -52,10 +65,11 @@ def upsert_json_dict(key: str, updates: dict):
     replace_file(data)
 
 def on_message(_client, _userdata, message):
-    print("message received")
+    logger.info("message received")
     try:
         payload_str = message.payload.decode("utf-8")
         data = json.loads(payload_str)
+        logger.info(f"topic: {message.topic}, data: {data}")
 
         if message.topic == "tower/sensors/status":
             global light
@@ -67,7 +81,7 @@ def on_message(_client, _userdata, message):
             send_light_command()
 
     except Exception as e:
-        print("on_message error:", repr(e))
+        logger.error(f"on_message error:", {repr(e)})
 
 def is_daytime():
     now = datetime.now().time()
@@ -98,11 +112,11 @@ def send_light_command():
                 tower_light_commander.setLight(mqtt_broker_host, mqtt_broker_port, payload)
     
 def on_connect(client, userdata, flags, reason_code, properties=None):
-    print("CONNECTED", reason_code, flush=True)
+    logger.info(f"CONNECTED, {reason_code}")
     client.subscribe(mqtt_topic)
 
 def on_disconnect(client, userdata, flags, reason_code, properties=None):
-    print("DISCONNECTED", reason_code, flush=True)
+    logger.info(f"DISCONNECTED, {reason_code}")
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "TowerLightSubscriber")
 client.on_connect = on_connect
