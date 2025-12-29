@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 mqtt_broker_host = os.getenv("MQTT_HOST")
 mqtt_broker_port = int(os.getenv("MQTT_PORT"))
 
-tower_json_path = "tower.json"
+tower_json_path = "tower/tower.json"
 
 light = 5000
 
@@ -42,6 +42,7 @@ def read_data_dict(path: str):
         return {}
     
 print("CWD:", os.getcwd())
+print(read_data_dict(tower_json_path))
 
 def replace_file(data: dict):
     with tower_lock:
