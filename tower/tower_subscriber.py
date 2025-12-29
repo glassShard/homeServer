@@ -40,9 +40,6 @@ def read_data_dict(path: str):
                 except json.JSONDecodeError:
                     return {}
         return {}
-    
-print("CWD:", os.getcwd())
-print(read_data_dict(tower_json_path))
 
 def replace_file(data: dict):
     with tower_lock:
