@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.StreamHandler(),
+        #logging.StreamHandler(),
         TimedRotatingFileHandler(os.getenv("LOGPATH"), when="midnight", backupCount=3)
     ]
 )
@@ -40,6 +40,8 @@ def read_data_dict(path: str):
                 except json.JSONDecodeError:
                     return {}
         return {}
+    
+print("CWD:", os.getcwd())
 
 def replace_file(data: dict):
     with tower_lock:
@@ -81,7 +83,7 @@ def on_message(_client, _userdata, message):
             send_light_command()
 
     except Exception as e:
-        logger.error(f"on_message error:", {repr(e)})
+        logger.error(logger.error(f"on_message error: {e!r}"))
 
 def is_daytime():
     now = datetime.now().time()
