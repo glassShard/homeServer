@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 mqtt_broker_host = os.getenv("MQTT_HOST")
 mqtt_broker_port = int(os.getenv("MQTT_PORT"))
 
-tower_json_path = "tower/tower.json"
+tower_json_path = os.getenv("TOWER_JSON_PATH")
 
 light = 5000
 
