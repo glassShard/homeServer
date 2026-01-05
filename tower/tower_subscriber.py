@@ -28,6 +28,8 @@ mqtt_broker_port = int(os.getenv("MQTT_PORT"))
 tower_json_path = os.getenv("TOWER_JSON_PATH")
 
 light = 5000
+LIGTH_FROM = "05:00"
+LIGHT_TO = "21:00"
 
 mqtt_topic = [("tower/actuators/status", 0), ("tower/sensors/status", 0)]
 
@@ -85,7 +87,7 @@ def on_message(_client, _userdata, message):
 
 def is_daytime():
     now = datetime.now().time()
-    return now >= datetime.strptime("05:00", "%H:%M").time() and now < datetime.strptime("22:00", "%H:%M").time()
+    return now >= datetime.strptime(LIGTH_FROM, "%H:%M").time() and now < datetime.strptime(LIGHT_TO, "%H:%M").time()
 
 def send_light_command():
     global light
