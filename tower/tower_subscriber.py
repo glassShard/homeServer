@@ -100,10 +100,10 @@ def send_light_command():
 
             payload_dict = None
 
-            if switch_value and daytime and light < 3000 and not value:
+            if switch_value and daytime and light < 3200 and not value:
                 payload_dict = {"channel": key, "value": 1}
                 
-            if (not switch_value or not daytime or light >=3000) and value:
+            if (not switch_value or not daytime or light >=3400) and value:
                 payload_dict = {"channel": key, "value": 0}
 
             if payload_dict is not None:
