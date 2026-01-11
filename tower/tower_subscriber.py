@@ -1,13 +1,12 @@
 from datetime import datetime
-import json
-import os
+import json, os, logging, tempfile
+from threading import Thread
 from dotenv import load_dotenv
 import paho.mqtt.client as mqtt
 import tower_light_commander
-import tempfile
 from tower_lock import tower_lock
-import logging
 from logging.handlers import TimedRotatingFileHandler
+from db import db_worker, queue_db_write
 
 load_dotenv()
 
@@ -15,7 +14,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        #logging.StreamHandler(),
+        logging.StreamHandler(),
         TimedRotatingFileHandler(os.getenv("LOGPATH"), when="midnight", backupCount=3)
     ]
 )
@@ -31,6 +30,12 @@ light = 5000
 LIGTH_FROM = "05:00"
 LIGHT_TO = "21:00"
 
+SENSOR_FREQUENCY = 10
+ACTUATOR_FREQUENCY = 10
+
+sensor = 0
+actuator = 0
+
 mqtt_topic = [("tower/actuators/status", 0), ("tower/sensors/status", 0)]
 
 def read_data_dict(path: str):
@@ -38,6 +43,7 @@ def read_data_dict(path: str):
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 try:
+                    #print(json.load(f))
                     return json.load(f)
                 except json.JSONDecodeError:
                     return {}
@@ -66,8 +72,24 @@ def upsert_json_dict(key: str, updates: dict):
     data.update({key: updates})
     replace_file(data)
 
+def send_data(topic_str: str, payload: dict):
+    logger.info(f"topic_str: {topic_str}, payload: {payload}")
+    topic = topic_str.split("/")[1]
+    fields = []
+    values = []
+    for key, value in payload.items():
+        fields.append(key)
+        values.append(value)
+
+    try:
+        logger.info(f"fields: {fields}, values: {values}")
+        queue_db_write({"table": topic, "fields": fields, "values": values})
+    except Exception as e: 
+        logger.error(str(e))
+        pass
+
 def on_message(_client, _userdata, message):
-    logger.info("message received")
+    global sensor, actuator
     try:
         payload_str = message.payload.decode("utf-8")
         data = json.loads(payload_str)
@@ -77,13 +99,22 @@ def on_message(_client, _userdata, message):
             global light
             light = data["light_raw"]
             upsert_json_dict("sensor_status", data)
+            sensor += 1
+            logger.info(f"sensor: {sensor}")
+            if sensor == SENSOR_FREQUENCY:
+                send_data(message.topic, data)
+                sensor = 0
 
         elif message.topic == "tower/actuators/status":
             upsert_json_dict("actuator_status", data)
             send_light_command()
+            actuator += 1
+            if actuator == ACTUATOR_FREQUENCY:
+                send_data(message.topic, data)
+                actuator = 0
 
     except Exception as e:
-        logger.error(logger.error(f"on_message error: {e!r}"))
+        logger.error(f"on_message error: {e!r}")
 
 def is_daytime():
     now = datetime.now().time()
@@ -99,7 +130,6 @@ def send_light_command():
     for key, value in actuator_state.items():
         if key.startswith("light"):
             switch_value = switch_state.get(key)
-
             payload_dict = None
 
             if switch_value and daytime and light < 3200 and not value:
@@ -110,8 +140,8 @@ def send_light_command():
 
             if payload_dict is not None:
                 payload = json.dumps(payload_dict, ensure_ascii=False)
-                print(payload)
-                tower_light_commander.setLight(mqtt_broker_host, mqtt_broker_port, payload)
+                logger.info(f"payload: {payload}")
+                #tower_light_commander.setLight(mqtt_broker_host, mqtt_broker_port, payload)
     
 def on_connect(client, userdata, flags, reason_code, properties=None):
     logger.info(f"CONNECTED, {reason_code}")
@@ -120,7 +150,9 @@ def on_connect(client, userdata, flags, reason_code, properties=None):
 def on_disconnect(client, userdata, flags, reason_code, properties=None):
     logger.info(f"DISCONNECTED, {reason_code}")
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "TowerLightSubscriber")
+Thread(target=db_worker, daemon=True).start()
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, os.getenv("LIGHT_SUBSCRIBER_CLIENT_NAME"))
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message
