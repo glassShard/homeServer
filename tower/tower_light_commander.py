@@ -1,5 +1,7 @@
 import paho.mqtt.client as mqtt
-import threading
+import threading, logging
+
+logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
 _client = None
@@ -15,7 +17,7 @@ def init(host, port):
         c.loop_start()
         _client = c
 
-def setLight(host, port, message):
+def set_light(host, port, message):
     global _client
     if _client is None:
         init(host, port)

@@ -1,12 +1,13 @@
 import psycopg
 from psycopg import sql
 from dotenv import load_dotenv
-import os, json, time
+import os, time, logging
 from psycopg import OperationalError
 from queue import Queue
-from threading import Thread
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 dbq = Queue(maxsize=1000)
 
@@ -63,7 +64,7 @@ def db_worker():
                 time.sleep(1)
 
             except Exception as e:
-                print("DB insert failed (non-connection error):", repr(e))
+                logger.error(f"DB insert failed (non-connection error):, {repr(e)}")
                 dbq.task_done()
                 break
 

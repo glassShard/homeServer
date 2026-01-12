@@ -43,7 +43,6 @@ def read_data_dict(path: str):
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 try:
-                    #print(json.load(f))
                     return json.load(f)
                 except json.JSONDecodeError:
                     return {}
@@ -141,7 +140,7 @@ def send_light_command():
             if payload_dict is not None:
                 payload = json.dumps(payload_dict, ensure_ascii=False)
                 logger.info(f"payload: {payload}")
-                #tower_light_commander.setLight(mqtt_broker_host, mqtt_broker_port, payload)
+                tower_light_commander.set_light(mqtt_broker_host, mqtt_broker_port, payload)
     
 def on_connect(client, userdata, flags, reason_code, properties=None):
     logger.info(f"CONNECTED, {reason_code}")
