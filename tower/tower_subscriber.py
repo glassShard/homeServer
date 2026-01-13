@@ -10,13 +10,16 @@ from db import db_worker, queue_db_write
 
 load_dotenv()
 
+env = os.getenv("ENVIRONMENT")
+
+handlers = [TimedRotatingFileHandler(os.getenv("LOGPATH"), when="midnight", backupCount=3)]
+if env == "dev":
+    handlers.append(logging.StreamHandler())
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        TimedRotatingFileHandler(os.getenv("LOGPATH"), when="midnight", backupCount=3)
-    ]
+    handlers=handlers
 )
 
 logger = logging.getLogger(__name__)
